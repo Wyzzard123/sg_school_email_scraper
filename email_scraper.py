@@ -1,9 +1,30 @@
+import time
+from datetime import datetime
+
 from selenium import webdriver
 from openpyxl import Workbook
 from sys import platform
 import os
 import stat
+import sys
 
+# Allow for command line argument to override default file name
+if len(sys.argv) > 1:
+    output_file_location = sys.argv[1]
+    if not output_file_location.endswith(".csv"):
+        output_file_location += ".csv"
+else:
+    output_file_location = "school_emails.csv"
+
+# If the file exists already, we will add a 1 to the end until it is not a file.
+while os.path.isfile(output_file_location):
+    print(output_file_location, "already exists. Adding timestamp to beginning of the file name.")
+    output_file_location = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "_" + output_file_location
+
+print("Output File:", output_file_location)
+
+print("If you want to change the default file location:\n"
+      "Usage: python email_scraper.py 'filelocation.csv'")
 email_link = "https://sis.moe.gov.sg/default.aspx?search=directory"
 
 
@@ -20,6 +41,7 @@ elif platform == "darwin":
     # os.chmod(driver_location, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
     system_os = "Mac OS X"
+
 elif platform == "linux" or platform == "linux2":
     driver_location = "webdrivers/linux/chromedriver"
     # Set to executable by owner
@@ -47,9 +69,12 @@ search_button = driver.find_element_by_id("Submit_Link")
 search_button.click()
 
 # Open CSV file
-with open("school_emails.csv", 'w') as f:
+with open(output_file_location, 'w') as f:
     # Write CSV headers to file
     f.write("School Name, Email\n")
+
+    # Sleep 5 seconds to allow the page to load
+    time.sleep(5)
 
     # Get all matching elements
     school_email_elements = driver.find_elements_by_css_selector("a[class='getSchDetails']")
